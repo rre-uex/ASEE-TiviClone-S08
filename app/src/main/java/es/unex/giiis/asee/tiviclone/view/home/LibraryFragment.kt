@@ -8,6 +8,8 @@ import android.view.ViewGroup
 import android.widget.Toast
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
+import es.unex.giiis.asee.tiviclone.api.getNetworkService
+import es.unex.giiis.asee.tiviclone.data.Repository
 import es.unex.giiis.asee.tiviclone.databinding.FragmentLibraryBinding
 import es.unex.giiis.asee.tiviclone.data.model.Show
 import es.unex.giiis.asee.tiviclone.data.model.User
@@ -27,8 +29,8 @@ private const val ARG_PARAM2 = "param2"
 class LibraryFragment : Fragment() {
 
     private lateinit var user: User
-
     private lateinit var db: TiviCloneDatabase
+    private lateinit var repository: Repository
 
     private lateinit var listener: OnShowClickListener
     interface OnShowClickListener {
@@ -56,6 +58,7 @@ class LibraryFragment : Fragment() {
     override fun onAttach(context: android.content.Context) {
         super.onAttach(context)
         db = TiviCloneDatabase.getInstance(context)!!
+        repository = Repository.getInstance(db.userDao(),db.showDao(), getNetworkService())
         if (context is OnShowClickListener) {
             listener = context
         } else {
@@ -110,8 +113,7 @@ class LibraryFragment : Fragment() {
     private fun setNoFavorite(show: Show){
         lifecycleScope.launch {
             show.isFavorite = false
-            //delete show and userShow is deleted by cascade
-            db.showDao().delete(show)
+            repository.deleteShowFromLibrary(show,user.userId!!)
         }
     }
 

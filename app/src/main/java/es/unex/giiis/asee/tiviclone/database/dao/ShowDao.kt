@@ -7,6 +7,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
+import androidx.room.Update
 import es.unex.giiis.asee.tiviclone.data.model.Show
 import es.unex.giiis.asee.tiviclone.data.model.UserShowCrossRef
 import es.unex.giiis.asee.tiviclone.data.model.UserWithShows
@@ -31,6 +32,12 @@ interface ShowDao {
 
     @Delete
     suspend fun delete(show: Show)
+
+    @Update
+    suspend fun update(show: Show)
+
+    @Delete
+    suspend fun delete(userShow: UserShowCrossRef)
 
     @Transaction
     @Query("SELECT * FROM User where userId = :userId")

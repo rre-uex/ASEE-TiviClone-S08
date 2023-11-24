@@ -8,6 +8,7 @@ import android.view.Menu
 import android.view.MenuItem
 import android.view.View
 import androidx.appcompat.widget.SearchView
+import androidx.core.view.get
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.navigateUp
@@ -70,11 +71,13 @@ class HomeActivity : AppCompatActivity(), DiscoverFragment.OnShowClickListener, 
         navController.addOnDestinationChangedListener { _, destination, _ ->
             if ((destination.id == R.id.showDetailFragment) ||
                 (destination.id == R.id.settingsFragment)){
-             //   binding.toolbar.visibility = View.GONE
-                binding.toolbar.menu.clear()
+                //binding.toolbar.menu.clear()
+                binding.toolbar.menu[0].isVisible = false
+                binding.toolbar.menu[1].isVisible = false
                 binding.bottomNavigation.visibility = View.GONE
             } else {
-                binding.toolbar.visibility = View.VISIBLE
+                binding.toolbar.menu[0].isVisible = true
+                binding.toolbar.menu[1].isVisible = true
                 binding.bottomNavigation.visibility = View.VISIBLE
             }
         }

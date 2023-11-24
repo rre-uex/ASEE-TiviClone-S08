@@ -3,6 +3,10 @@ package es.unex.giiis.asee.tiviclone.data
 
 import es.unex.giiis.asee.tiviclone.api.APIError
 import es.unex.giiis.asee.tiviclone.api.TVShowAPI
+import es.unex.giiis.asee.tiviclone.api.getNetworkService
+import es.unex.giiis.asee.tiviclone.data.api.TvShow
+import es.unex.giiis.asee.tiviclone.data.model.Show
+import es.unex.giiis.asee.tiviclone.data.model.UserShowCrossRef
 import es.unex.giiis.asee.tiviclone.database.dao.ShowDao
 import es.unex.giiis.asee.tiviclone.database.dao.UserDao
 
@@ -14,6 +18,25 @@ class Repository private constructor(
     private var lastUpdateTimeMillis: Long = 0L
 
     val shows = showDao.getShows()
+
+    suspend fun deleteShowFromLibrary(show: Show, userId: Long) {
+        showDao.delete(UserShowCrossRef(userId, show.showId))
+        showDao.update(show)
+    }
+    suspend fun showToLibrary(show: Show, userId: Long) {
+        showDao.update(show)
+        showDao.insertUserShow(UserShowCrossRef(userId, show.showId))
+    }
+
+    suspend fun fetchShowDetail(showId: Int): TvShow {
+        var show = TvShow()
+        try {
+            show = getNetworkService().getShowDetail(showId).tvShow ?: TvShow()
+        } catch (cause: Throwable) {
+            throw APIError("Unable to fetch data from API", cause)
+        }
+        return show
+    }
 
     /**
      * Update the shows cache.
@@ -48,7 +71,7 @@ class Repository private constructor(
     }
 
     companion object {
-        private const val MIN_TIME_FROM_LAST_FETCH_MILLIS: Long = 30000
+        private const val MIN_TIME_FROM_LAST_FETCH_MILLIS: Long = 3000
 
         @Volatile
         private var INSTANCE: Repository? = null

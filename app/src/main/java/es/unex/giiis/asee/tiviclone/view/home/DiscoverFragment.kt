@@ -90,7 +90,6 @@ class DiscoverFragment : Fragment() {
 
         subscribeUi(adapter)
         launchDataLoad { repository.tryUpdateRecentShowsCache() }
-
     }
 
     private fun subscribeUi(adapter: DiscoverAdapter) {
@@ -121,7 +120,7 @@ class DiscoverFragment : Fragment() {
     private fun setFavorite(show: Show){
         lifecycleScope.launch {
             show.isFavorite = true
-            db.showDao().insertAndRelate(show,user.userId!!)
+            repository.showToLibrary(show,user.userId!!)
         }
     }
 

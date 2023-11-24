@@ -13,7 +13,7 @@ import com.bumptech.glide.Glide
 import es.unex.giiis.asee.tiviclone.R
 import es.unex.giiis.asee.tiviclone.api.APIError
 import es.unex.giiis.asee.tiviclone.api.getNetworkService
-import es.unex.giiis.asee.tiviclone.data.api.TvShow
+import es.unex.giiis.asee.tiviclone.data.Repository
 import es.unex.giiis.asee.tiviclone.data.model.Show
 import es.unex.giiis.asee.tiviclone.data.model.User
 import es.unex.giiis.asee.tiviclone.data.toShow
@@ -30,6 +30,7 @@ private const val TAG = "ShowDetailFragment"
  */
 class ShowDetailFragment : Fragment() {
 
+    private lateinit var repository: Repository
     private lateinit var user: User
     private lateinit var db: TiviCloneDatabase
 
@@ -49,6 +50,7 @@ class ShowDetailFragment : Fragment() {
     override fun onAttach(context: android.content.Context) {
         super.onAttach(context)
         db = TiviCloneDatabase.getInstance(context)!!
+        repository = Repository.getInstance(db.userDao(),db.showDao(),getNetworkService())
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -61,9 +63,9 @@ class ShowDetailFragment : Fragment() {
         lifecycleScope.launch{
             Log.d(TAG, "Fetching ${show.title} details")
             try{
-                val _show = fetchShowDetail(show.showId).toShow()
-                _show.isFavorite = show.isFavorite
-                showBinding(_show)
+               val _show = repository.fetchShowDetail(show.showId).toShow()
+               _show.isFavorite = show.isFavorite
+               showBinding(_show)
             } catch (error: APIError) {
                 Toast.makeText(context, error.message, Toast.LENGTH_SHORT).show()
             }
@@ -93,24 +95,14 @@ class ShowDetailFragment : Fragment() {
             lifecycleScope.launch {
                 if (isChecked) {
                     show.isFavorite = true
-                    db.showDao().insertAndRelate(show, user.userId!!)
+                    repository.showToLibrary(show,user.userId!!)
                 } else {
                     show.isFavorite = false
-                    db.showDao().delete(show)
+                    repository.deleteShowFromLibrary(show,user.userId!!)
                 }
             }
 
         }
-    }
-
-    private suspend fun fetchShowDetail(showId: Int): TvShow {
-        var show = TvShow()
-        try {
-            show = getNetworkService().getShowDetail(showId).tvShow ?: TvShow()
-        } catch (cause: Throwable) {
-            throw APIError("Unable to fetch data from API", cause)
-        }
-        return show
     }
 
     override fun onDestroyView() {
