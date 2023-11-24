@@ -12,11 +12,11 @@ import es.unex.giiis.asee.tiviclone.databinding.FragmentDiscoverBinding
 import androidx.recyclerview.widget.LinearLayoutManager
 import es.unex.giiis.asee.tiviclone.api.APIError
 import es.unex.giiis.asee.tiviclone.api.getNetworkService
-import es.unex.giiis.asee.tiviclone.data.api.TvShow
+import es.unex.giiis.asee.tiviclone.data.Repository
 import es.unex.giiis.asee.tiviclone.data.model.Show
 import es.unex.giiis.asee.tiviclone.data.model.User
-import es.unex.giiis.asee.tiviclone.data.toShow
 import es.unex.giiis.asee.tiviclone.database.TiviCloneDatabase
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
 // TODO: Rename parameter arguments, choose names that match
@@ -33,6 +33,7 @@ class DiscoverFragment : Fragment() {
 
     private lateinit var user: User
     private lateinit var db: TiviCloneDatabase
+    private lateinit var repository: Repository
 
     private val TAG = "DiscoverFragment"
 
@@ -63,6 +64,7 @@ class DiscoverFragment : Fragment() {
     override fun onAttach(context: android.content.Context) {
         super.onAttach(context)
         db = TiviCloneDatabase.getInstance(context)!!
+        repository = Repository.getInstance(db.userDao(),db.showDao(),getNetworkService())
         if (context is OnShowClickListener) {
             listener = context
         } else {
@@ -86,31 +88,15 @@ class DiscoverFragment : Fragment() {
         val userProvider = activity as UserProvider
         user = userProvider.getUser()
 
-        lifecycleScope.launch {
-            if (_shows.isEmpty()) {
-                binding.spinner.visibility = View.VISIBLE
-                try {
-                    _shows = fetchShows().map(TvShow::toShow)
-                    adapter.updateData(_shows)
-                } catch (error: APIError) {
-                    Toast.makeText(context, error.message, Toast.LENGTH_SHORT).show()
-                } finally {
-                    binding.spinner.visibility = View.GONE
-
-                }
-            }
-        }
+        subscribeUi(adapter)
+        launchDataLoad { repository.tryUpdateRecentShowsCache() }
 
     }
 
-    private suspend fun fetchShows(): List<TvShow> {
-        var apiShows = listOf<TvShow>()
-        try {
-            apiShows = getNetworkService().getShows(1).tvShows
-        } catch (cause: Throwable) {
-            throw APIError("Unable to fetch data from API", cause)
+    private fun subscribeUi(adapter: DiscoverAdapter) {
+        repository.shows.observe(viewLifecycleOwner) { shows ->
+            adapter.updateData(shows)
         }
-        return apiShows
     }
 
     private fun setUpRecyclerView() {
@@ -143,6 +129,31 @@ class DiscoverFragment : Fragment() {
         super.onDestroyView()
         _binding = null // avoid memory leaks
     }
+
+    /**
+     * Helper function to call a data load function with a loading spinner; errors will trigger a
+     * Toast.
+     *
+     * By marking [block] as [suspend] this creates a suspend lambda which can call suspend
+     * functions.
+     *
+     * @param block lambda to actually load data. It is called in the lifecycleScope. Before calling
+     *              the lambda, the loading spinner will display. After completion or error, the
+     *              loading spinner will stop.
+     */
+    private fun launchDataLoad(block: suspend () -> Unit): Job {
+        return lifecycleScope.launch {
+            try {
+                binding.spinner.visibility = View.VISIBLE
+                block()
+            } catch (error: APIError) {
+                    Toast.makeText(context, error.message, Toast.LENGTH_SHORT).show()
+            } finally {
+                binding.spinner.visibility = View.GONE
+            }
+        }
+    }
+
 
     companion object {
         /**

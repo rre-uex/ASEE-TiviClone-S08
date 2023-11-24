@@ -1,5 +1,6 @@
 package es.unex.giiis.asee.tiviclone.database.dao
 
+import androidx.lifecycle.LiveData
 import androidx.room.Dao
 import androidx.room.Delete
 import androidx.room.Insert
@@ -15,6 +16,15 @@ interface ShowDao {
 
     @Query("SELECT * FROM show WHERE showId = :id")
     suspend fun findById(id: Int): Show
+
+    @Query("SELECT * FROM show")
+    fun getShows(): LiveData<List<Show>>
+
+    @Query("SELECT count(*) FROM show")
+    suspend fun getNumberOfShows(): Long
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertAll(shows: List<Show>)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(show: Show)
