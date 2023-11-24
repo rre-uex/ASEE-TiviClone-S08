@@ -1,12 +1,16 @@
 package es.unex.giiis.asee.tiviclone.data
 
 
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.switchMap
 import es.unex.giiis.asee.tiviclone.api.APIError
 import es.unex.giiis.asee.tiviclone.api.TVShowAPI
 import es.unex.giiis.asee.tiviclone.api.getNetworkService
 import es.unex.giiis.asee.tiviclone.data.api.TvShow
 import es.unex.giiis.asee.tiviclone.data.model.Show
 import es.unex.giiis.asee.tiviclone.data.model.UserShowCrossRef
+import es.unex.giiis.asee.tiviclone.data.model.UserWithShows
 import es.unex.giiis.asee.tiviclone.database.dao.ShowDao
 import es.unex.giiis.asee.tiviclone.database.dao.UserDao
 
@@ -18,6 +22,15 @@ class Repository private constructor(
     private var lastUpdateTimeMillis: Long = 0L
 
     val shows = showDao.getShows()
+
+    private val userFilter = MutableLiveData<Long>()
+
+    val showsInLibrary: LiveData<UserWithShows> =
+        userFilter.switchMap{ userid -> showDao.getUserWithShows(userid) }
+
+    fun setUserid(userid: Long) {
+        userFilter.value = userid
+    }
 
     suspend fun deleteShowFromLibrary(show: Show, userId: Long) {
         showDao.delete(UserShowCrossRef(userId, show.showId))

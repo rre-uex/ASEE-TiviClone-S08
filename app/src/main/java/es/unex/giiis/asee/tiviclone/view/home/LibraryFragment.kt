@@ -81,7 +81,8 @@ class LibraryFragment : Fragment() {
         val userProvider = activity as UserProvider
         user = userProvider.getUser()
 
-        loadFavorites()
+        subscribeUi(adapter)
+        repository.setUserid(user.userId!!)
     }
 
     private fun setUpRecyclerView() {
@@ -90,7 +91,7 @@ class LibraryFragment : Fragment() {
         },
             onLongClick = {
                 setNoFavorite(it)
-                loadFavorites()
+                //loadFavorites()
                 Toast.makeText(context, "${it.title} removed from library", Toast.LENGTH_SHORT).show()
             },
             context = context
@@ -102,14 +103,19 @@ class LibraryFragment : Fragment() {
         android.util.Log.d("DiscoverFragment", "setUpRecyclerView")
     }
 
-    private fun loadFavorites(){
-        lifecycleScope.launch {
-            binding.spinner.visibility = View.VISIBLE
-            favShows = db.showDao().getUserWithShows(user.userId!!).shows
-            adapter.updateData(favShows)
-            binding.spinner.visibility = View.GONE
+    private fun subscribeUi(adapter: LibraryAdapter) {
+        repository.showsInLibrary.observe(viewLifecycleOwner) { user ->
+            adapter.updateData(user.shows)
         }
     }
+//    private fun loadFavorites(){
+//        lifecycleScope.launch {
+//            binding.spinner.visibility = View.VISIBLE
+//            favShows = db.showDao().getUserWithShows(user.userId!!).shows
+//            adapter.updateData(favShows)
+//            binding.spinner.visibility = View.GONE
+//        }
+//    }
     private fun setNoFavorite(show: Show){
         lifecycleScope.launch {
             show.isFavorite = false

@@ -41,7 +41,7 @@ interface ShowDao {
 
     @Transaction
     @Query("SELECT * FROM User where userId = :userId")
-    suspend fun getUserWithShows(userId: Long): UserWithShows
+    fun getUserWithShows(userId: Long): LiveData<UserWithShows>
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertUserShow(crossRef: UserShowCrossRef)
